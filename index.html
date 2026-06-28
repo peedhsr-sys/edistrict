@@ -1,156 +1,96 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>eDistrict Tracker - IIT Edition</title>
+    <title>e-District Status Finder</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
         body {
-            background-color: #0f172a;
-            color: #f8fafc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
             display: flex;
-            flex-direction: column;
+            justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            padding-top: 50px;
+            height: 100vh;
+            margin: 0;
         }
-
-        .container {
-            background: #1e293b;
+        .card {
+            background: white;
             padding: 30px;
             border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-            width: 100%;
-            max-width: 500px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             text-align: center;
-            border: 1px solid #334155;
+            max-width: 400px;
+            width: 100%;
         }
-
         h2 {
-            color: #38bdf8;
+            color: #333;
             margin-bottom: 20px;
-            font-size: 24px;
         }
-
         input[type="text"] {
-            width: 100%;
-            padding: 15px;
-            background: #0f172a;
-            border: 2px solid #334155;
-            border-radius: 8px;
-            color: #38bdf8;
-            font-size: 18px;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 20px;
+            width: 90%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
             outline: none;
-            transition: 0.3s;
+            transition: border-color 0.3s;
         }
-
         input[type="text"]:focus {
-            border-color: #38bdf8;
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+            border-color: #007bff;
         }
-
         button {
-            width: 100%;
-            background: #0284c7;
-            color: white;
-            padding: 15px;
-            border: none;
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        button:hover {
-            background: #0369a1;
-        }
-
-        /* Iframe Box (जादू यहीं होगा) */
-        #resultBox {
-            display: none;
-            margin-top: 25px;
-            width: 100%;
-            background: #ffffff;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 3px solid #38bdf8;
-        }
-
-        iframe {
-            width: 100%;
-            height: 400px; /* खिड़की की ऊंचाई */
-            border: none;
-            display: block;
-        }
-        
-        #loadingText {
-            display: none;
-            color: #f59e0b;
             margin-top: 15px;
+            width: 96%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
             font-weight: bold;
-            animation: blink 1s infinite;
+            transition: background 0.2s;
         }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        button:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>⚡ Superfast Tracker</h2>
+<div class="card">
+    <h2>e-District Status Tracker</h2>
+    <p>Application Number enter karein aur enter dabayein:</p>
     
-    <input type="text" id="appNo" placeholder="Application Number डालें" autocomplete="off" />
-    <button onclick="fetchStatus()">Track Status</button>
-    
-    <div id="loadingText">सिक्योर कनेक्शन बनाया जा रहा है...</div>
-
-    <!-- यह Iframe सीधे सरकारी वेबसाइट को आपके पेज पर दिखाएगा -->
-    <div id="resultBox">
-        <iframe id="statusFrame"></iframe>
-    </div>
+    <!-- Input Form -->
+    <input type="text" id="appNo" placeholder="Enter Application No." autocomplete="off" autofocus>
+    <button onclick="redirectToStatus()">Check Status</button>
 </div>
 
 <script>
-    function fetchStatus() {
-        const appNo = document.getElementById('appNo').value.trim();
+    // Button click karne par function run hoga
+    function redirectToStatus() {
+        var appNoValue = document.getElementById('appNo').value.trim();
         
-        if (!appNo) {
-            alert('भाई, एप्लीकेशन नंबर तो डालो!');
+        if (appNoValue === "") {
+            alert("Bhai, pehle Application Number toh dalo!");
             return;
         }
-
-        // UI अपडेट
-        document.getElementById('resultBox').style.display = 'none';
-        document.getElementById('loadingText').style.display = 'block';
-
-        // आपने जो सीधा लिंक दिया था, उसमें एप्लीकेशन नंबर जोड़ रहे हैं
-        const targetUrl = `https://edistrict.up.gov.in/edistrict/showStatushome.aspx?application_no=${appNo}`;
-
-        const iframe = document.getElementById('statusFrame');
         
-        // Iframe के अंदर असली वेबसाइट लोड करना
-        iframe.src = targetUrl;
-
-        // जैसे ही Iframe लोड हो जाए, लोडिंग टेक्स्ट छुपा दो और रिजल्ट दिखा दो
-        iframe.onload = function() {
-            document.getElementById('loadingText').style.display = 'none';
-            document.getElementById('resultBox').style.display = 'block';
-        };
+        // Base URL jisme number jodna hai
+        var baseUrl = "https://edistrict.up.gov.in/edistrict/showStatushome.aspx?application_no=";
+        
+        // Final URL generate karke naye tab me open karega
+        window.open(baseUrl + appNoValue, '_blank');
     }
+
+    // Enter key press karne par bhi submit ho jaye uske liye shortcut
+    document.getElementById('appNo').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            redirectToStatus();
+        }
+    });
 </script>
 
 </body>
