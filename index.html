@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Superfast Status Check</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; padding: 20px; text-align: center; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        input[type="text"] { width: 80%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
+        button { background-color: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
+        button:hover { background-color: #218838; }
+        #captchaSection, #resultSection { display: none; margin-top: 20px; border-top: 2px solid #eee; padding-top: 20px; }
+        img#captchaImg { border: 1px solid #333; margin-bottom: 10px; }
+        .error { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>स्टेटस चेक पोर्टल</h2>
+    <input type="text" id="appNumber" placeholder="एप्लीकेशन नंबर दर्ज करें..." />
+    <button onclick="fetchCaptchaAndDetails()">सर्च करें</button>
+
+    <div id="captchaSection">
+        <p>कैप्चा सॉल्व हो रहा है...</p>
+        <img id="captchaImg" crossorigin="anonymous" alt="Captcha loading..." />
+        <br>
+        <input type="text" id="captchaBox" placeholder="Captcha result..." readonly />
+        <button id="submitCaptchaBtn" style="display:none;">ऑटो-सबमिट</button>
+    </div>
+
+    <div id="resultSection">
+        <h3>विवरण:</h3>
+        <div id="statusDetails"></div>
+    </div>
+</div>
+
+<script>
+    // नोट: असली eDistrict URL को सीधे कॉल करने पर CORS एरर आएगा। 
+    // आपको corsproxy.io या किसी अन्य प्रॉक्सी का उपयोग करना पड़ सकता है।
+    const PROXY_URL = "https://corsproxy.io/?"; 
+    const TARGET_SITE_URL = "https://example-edistrict-site.gov.in/status"; // यहाँ असली लिंक डालें
+
+    async function fetchCaptchaAndDetails() {
+        const appNo = document.getElementById('appNumber').value;
+        if (!appNo) {
+            alert('कृपया एप्लीकेशन नंबर डालें!');
+            return;
+        }
+
+        // UI अपडेट करें
+        document.getElementById('captchaSection').style.display = 'block';
+        document.getElementById('resultSection').style.display = 'none';
+        const captchaBox = document.getElementById('captchaBox');
+        captchaBox.value = 'Fetching Captcha...';
+
+        try {
+            // 1. वेबसाइट से पेज/कैप्चा फैच करना (Proxy के माध्यम से)
+            // यह एक डमी रिक्वेस्ट है, आपको इसे वेबसाइट के नेटवर्क टैब के अनुसार सेट करना होगा
+            const response = await fetch(PROXY_URL + encodeURIComponent(TARGET_SITE_URL + "?appNo=" + appNo));
+            
+            // मान लेते हैं कि रिस्पांस में हमें कैप्चा का URL मिलता है
+            // यहाँ असली वेबसाइट के हिसाब से कैप्चा URL सेट करें
+            const captchaImageUrl = "https://copytextfrompicture.xyz/sample-captcha.png"; // डमी कैप्चा URL
+            
+            const imgElement = document.getElementById('captchaImg');
+            imgElement.src = captchaImageUrl;
+
+            // इमेज लोड होने के बाद आपका OCR फंक्शन चलाएंगे
+            imgElement.onload = () => {
+                solveAndFillCaptcha(imgElement, captchaBox);
+            };
+
+        } catch (err) {
+            console.error(err);
+            captchaBox.value = 'Network Error';
+        }
+    }
+
+    // आपका बनाया हुआ OCR फंक्शन (थोड़ा मॉडिफाई किया हुआ)
+    async function solveAndFillCaptcha(img, captchaBox) {
+        captchaBox.value = 'Processing...';
+
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth || img.width;
+            canvas.height = img.naturalHeight || img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+            const formData = new FormData();
+            formData.append("image", blob, "captcha.png");
+
+            // OCR API कॉल
+            const ocrResponse = await fetch("https://copytextfrompicture.xyz/ocr/", {
+                method: "POST",
+                body: formData
+            });
+
+            const result = await ocrResponse.json();
+            
+            if (result.text) {
+                const cleanText = result.text.trim().replace(/\s+/g, '');
+                captchaBox.value = cleanText;
+                
+                // कैप्चा सॉल्व होते ही रिजल्ट फैच करने वाला फंक्शन चलाएं
+                fetchFinalDetails(cleanText);
+            } else {
+                captchaBox.value = "Failed";
+            }
+        } catch (err) {
+            console.error("API Error (Timeout etc):", err);
+            captchaBox.value = "Technical Error"; 
+        }
+    }
+
+    // विवरण लाने और दिखाने का फंक्शन
+    async function fetchFinalDetails(captchaCode) {
+        const detailsDiv = document.getElementById('statusDetails');
+        detailsDiv.innerHTML = "विवरण लोड हो रहा है...";
+        document.getElementById('resultSection').style.display = 'block';
+
+        // यहाँ आपको POST रिक्वेस्ट भेजनी होगी जिसमें एप्लीकेशन नंबर और सॉल्व किया हुआ कैप्चा हो
+        // उदाहरण के लिए:
+        /*
+        const formData = new URLSearchParams();
+        formData.append('appNo', document.getElementById('appNumber').value);
+        formData.append('captcha', captchaCode);
+        
+        const res = await fetch(PROXY_URL + encodeURIComponent(TARGET_SITE_URL), {
+            method: 'POST',
+            body: formData
+        });
+        const htmlText = await res.text();
+        // फिर उस HTML में से "विवरण हेतु क्लिक करें" वाला हिस्सा निकालकर यहाँ दिखाएं
+        */
+
+        // अभी के लिए डमी डेटा:
+        setTimeout(() => {
+            detailsDiv.innerHTML = `
+                <p><strong>स्टेटस:</strong> स्वीकृत</p>
+                <p><strong>टिप्पणी:</strong> प्रमाण पत्र जारी कर दिया गया है।</p>
+                <button onclick="alert('विवरण हेतु पेज खुलेगा!')">विवरण हेतु क्लिक करें</button>
+            `;
+        }, 1500);
+    }
+</script>
+
+</body>
+</html>
