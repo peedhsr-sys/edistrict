@@ -1,56 +1,157 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>eDistrict Tracker - IIT Edition</title>
     <style>
-        body { background: #0f172a; color: white; display: flex; justify-content: center; padding-top: 50px; font-family: sans-serif; }
-        .box { background: #1e293b; padding: 30px; border-radius: 12px; width: 400px; text-align: center; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: none; }
-        button { width: 100%; padding: 12px; background: #3b82f6; border: none; color: white; font-weight: bold; cursor: pointer; }
-        #loader { display: none; margin-top: 15px; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding-top: 50px;
+        }
+
+        .container {
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+            border: 1px solid #334155;
+        }
+
+        h2 {
+            color: #38bdf8;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            background: #0f172a;
+            border: 2px solid #334155;
+            border-radius: 8px;
+            color: #38bdf8;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+        }
+
+        button {
+            width: 100%;
+            background: #0284c7;
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: #0369a1;
+        }
+
+        /* Iframe Box (जादू यहीं होगा) */
+        #resultBox {
+            display: none;
+            margin-top: 25px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 3px solid #38bdf8;
+        }
+
+        iframe {
+            width: 100%;
+            height: 400px; /* खिड़की की ऊंचाई */
+            border: none;
+            display: block;
+        }
+        
+        #loadingText {
+            display: none;
+            color: #f59e0b;
+            margin-top: 15px;
+            font-weight: bold;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
     </style>
 </head>
 <body>
 
-<div class="box">
-    <h2>Tracker System</h2>
-    <input type="text" id="appNo" placeholder="Application Number">
-    <button onclick="runTracker()">TRACK STATUS</button>
-    <div id="loader">Processing Request...</div>
-    <div id="result"></div>
+<div class="container">
+    <h2>⚡ Superfast Tracker</h2>
+    
+    <input type="text" id="appNo" placeholder="Application Number डालें" autocomplete="off" />
+    <button onclick="fetchStatus()">Track Status</button>
+    
+    <div id="loadingText">सिक्योर कनेक्शन बनाया जा रहा है...</div>
+
+    <!-- यह Iframe सीधे सरकारी वेबसाइट को आपके पेज पर दिखाएगा -->
+    <div id="resultBox">
+        <iframe id="statusFrame"></iframe>
+    </div>
 </div>
 
 <script>
-async function runTracker() {
-    const appNo = document.getElementById('appNo').value;
-    const loader = document.getElementById('loader');
-    loader.style.display = 'block';
-
-    const targetUrl = `https://edistrict.up.gov.in/edistrict/showStatushome.aspx?application_no=${appNo}`;
-    
-    try {
-        // IIT Professional Fetch Pattern: Spoofing Referer to pass firewall
-        const response = await fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(targetUrl), {
-            method: 'GET',
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-                'Referer': 'https://edistrict.up.gov.in/'
-            }
-        });
-
-        if(!response.ok) throw new Error("Blocked by Server");
-
-        const data = await response.text();
-        document.getElementById('result').innerHTML = "Status Fetched Successfully! (Check Console for details)";
-        console.log("Data Received:", data); // Yaha data parse kar sakte ho
+    function fetchStatus() {
+        const appNo = document.getElementById('appNo').value.trim();
         
-    } catch (e) {
-        alert("Server restricted the request. Try using a VPN or local Node.js proxy.");
-    } finally {
-        loader.style.display = 'none';
+        if (!appNo) {
+            alert('भाई, एप्लीकेशन नंबर तो डालो!');
+            return;
+        }
+
+        // UI अपडेट
+        document.getElementById('resultBox').style.display = 'none';
+        document.getElementById('loadingText').style.display = 'block';
+
+        // आपने जो सीधा लिंक दिया था, उसमें एप्लीकेशन नंबर जोड़ रहे हैं
+        const targetUrl = `https://edistrict.up.gov.in/edistrict/showStatushome.aspx?application_no=${appNo}`;
+
+        const iframe = document.getElementById('statusFrame');
+        
+        // Iframe के अंदर असली वेबसाइट लोड करना
+        iframe.src = targetUrl;
+
+        // जैसे ही Iframe लोड हो जाए, लोडिंग टेक्स्ट छुपा दो और रिजल्ट दिखा दो
+        iframe.onload = function() {
+            document.getElementById('loadingText').style.display = 'none';
+            document.getElementById('resultBox').style.display = 'block';
+        };
     }
-}
 </script>
+
 </body>
 </html>
